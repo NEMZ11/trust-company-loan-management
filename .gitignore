@@ -9,3 +9,4 @@ dist
 github-upload
 work
 *.zip
+*.tsbuildinfo
