@@ -13,6 +13,26 @@ const loginSchema = z.object({
   password: z.string().min(1)
 });
 
+const accountSettingsSchema = z.object({
+  email: z.string().email(),
+  phone: z.string().trim().max(50).optional()
+});
+
+const passwordSettingsSchema = z
+  .object({
+    currentPassword: z.string().min(1),
+    newPassword: z.string().min(8),
+    confirmPassword: z.string().min(8)
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"]
+  });
+
+function redirectSettings(status: "account-saved" | "password-saved" | "staff-password-saved" | "staff-status-saved" | "invalid-account" | "invalid-password" | "email-taken" | "current-password-wrong" | "staff-password-short"): never {
+  redirect(`/settings?status=${status}`);
+}
+
 export async function loginAction(_: unknown, formData: FormData) {
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: "Enter a valid email and password." };
@@ -346,4 +366,140 @@ export async function markNotificationGroupReadAction(formData: FormData) {
   revalidatePath("/loans");
   revalidatePath("/repayments");
   revalidatePath("/dashboard");
+}
+
+export async function updateCurrentUserAccountAction(formData: FormData) {
+  const currentUser = await requireUser();
+  const parsed = accountSettingsSchema.safeParse({
+    email: String(formData.get("email") || ""),
+    phone: String(formData.get("phone") || "")
+  });
+
+  if (!parsed.success) {
+    redirectSettings("invalid-account");
+  }
+
+  const data = parsed.data;
+
+  const emailInUse = await prisma.user.findFirst({
+    where: {
+      email: data.email,
+      id: { not: currentUser.id }
+    },
+    select: { id: true }
+  });
+
+  if (emailInUse) {
+    redirectSettings("email-taken");
+  }
+
+  await prisma.user.update({
+    where: { id: currentUser.id },
+    data: {
+      email: data.email,
+      phone: data.phone || null
+    }
+  });
+
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+  redirectSettings("account-saved");
+}
+
+export async function updateCurrentUserPasswordAction(formData: FormData) {
+  const currentUser = await requireUser();
+  const parsed = passwordSettingsSchema.safeParse({
+    currentPassword: String(formData.get("currentPassword") || ""),
+    newPassword: String(formData.get("newPassword") || ""),
+    confirmPassword: String(formData.get("confirmPassword") || "")
+  });
+
+  if (!parsed.success) {
+    redirectSettings("invalid-password");
+  }
+
+  const data = parsed.data;
+
+  const userWithPassword = await prisma.user.findUnique({
+    where: { id: currentUser.id },
+    select: { passwordHash: true }
+  });
+
+  if (!userWithPassword || !(await verifyPassword(data.currentPassword, userWithPassword.passwordHash))) {
+    redirectSettings("current-password-wrong");
+  }
+
+  await prisma.user.update({
+    where: { id: currentUser.id },
+    data: {
+      passwordHash: await hashPassword(data.newPassword)
+    }
+  });
+
+  revalidatePath("/settings");
+  redirectSettings("password-saved");
+}
+
+export async function resetStaffPasswordAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const staffId = String(formData.get("staffId") || "");
+  const newPassword = String(formData.get("newPassword") || "");
+
+  if (newPassword.length < 8) {
+    redirectSettings("staff-password-short");
+  }
+
+  await prisma.user.update({
+    where: { id: staffId },
+    data: {
+      passwordHash: await hashPassword(newPassword)
+    }
+  });
+
+  await prisma.notification.create({
+    data: {
+      category: "STAFF",
+      entityId: staffId,
+      title: "Password reset",
+      message: `${admin.name} reset a staff password from Settings.`,
+      createdById: admin.id,
+      createdByName: admin.name,
+      read: true
+    }
+  });
+
+  revalidatePath("/settings");
+  revalidatePath("/staff");
+  redirectSettings("staff-password-saved");
+}
+
+export async function toggleStaffActiveAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const staffId = String(formData.get("staffId") || "");
+  const makeActive = String(formData.get("makeActive")) === "true";
+
+  if (staffId === admin.id) {
+    redirectSettings("staff-status-saved");
+  }
+
+  await prisma.user.update({
+    where: { id: staffId },
+    data: { isActive: makeActive }
+  });
+
+  await prisma.notification.create({
+    data: {
+      category: "STAFF",
+      entityId: staffId,
+      title: makeActive ? "Staff reactivated" : "Staff deactivated",
+      message: `${admin.name} ${makeActive ? "reactivated" : "deactivated"} a staff account from Settings.`,
+      createdById: admin.id,
+      createdByName: admin.name,
+      read: true
+    }
+  });
+
+  revalidatePath("/settings");
+  revalidatePath("/staff");
+  redirectSettings("staff-status-saved");
 }

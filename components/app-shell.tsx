@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   ReceiptText,
+  Settings,
   Users,
   UserRoundCog
 } from "lucide-react";
@@ -21,6 +22,7 @@ const links = [
   { href: "/loans", label: "Loans", icon: BadgeDollarSign, category: "LOANS" },
   { href: "/repayments", label: "Repayments", icon: ReceiptText, category: "REPAYMENTS" },
   { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/settings", label: "Settings", icon: Settings },
   { href: "/branches", label: "Branches", icon: Building2, adminOnly: true },
   { href: "/staff", label: "Staff", icon: UserRoundCog, adminOnly: true }
 ];
