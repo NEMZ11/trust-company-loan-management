@@ -34,7 +34,7 @@ async function main() {
   ]);
 
   const passwordHash = await hash("admin123", 10);
-  const staffPasswordHash = await hash("staff123", 10);
+  const staffPasswordHash = await hash("williams123", 10);
 
   const admin = await prisma.user.create({
     data: {
@@ -50,7 +50,7 @@ async function main() {
   const officerA = await prisma.user.create({
     data: {
       name: "Daniel Okoro",
-      email: "daniel@trustcompany.local",
+      email: "williams@trustcompany.local",
       passwordHash: staffPasswordHash,
       role: "STAFF",
       phone: "+1 555 0141",

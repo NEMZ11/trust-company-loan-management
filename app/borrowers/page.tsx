@@ -1,7 +1,8 @@
 import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/badge";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { Button, Card, CardHeader, Field } from "@/components/ui";
-import { createBorrowerAction, markNotificationGroupReadAction, updateBorrowerKycAction } from "@/app/actions";
+import { createBorrowerAction, deleteBorrowerAction, markNotificationGroupReadAction, resetBorrowerAction, updateBorrowerKycAction } from "@/app/actions";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -92,22 +93,51 @@ export default async function BorrowersPage({ searchParams }: { searchParams: Pr
 
                 <div className="mt-3 rounded-md border border-slate-100 p-3 text-sm text-slate-600 text-safe">
                   {borrower.address}
-                  {borrower.notes ? <span> · {borrower.notes}</span> : null}
+                  {borrower.notes ? <span> - {borrower.notes}</span> : null}
                 </div>
 
                 {user.role === "ADMIN" ? (
-                  <form action={updateBorrowerKycAction} className="mt-4 flex min-w-0 flex-wrap items-end gap-2 border-t border-blue-100 pt-4">
-                    <input type="hidden" name="borrowerId" value={borrower.id} />
-                    <div className="min-w-44 flex-1">
-                      <label>KYC decision</label>
-                      <select name="kycStatus" defaultValue={borrower.kycStatus}>
-                        <option value="PENDING">Pending</option>
-                        <option value="VERIFIED">Verified</option>
-                        <option value="REJECTED">Rejected</option>
-                      </select>
+                  <div className="mt-4 border-t border-blue-100 pt-4">
+                    <form action={updateBorrowerKycAction} className="flex min-w-0 flex-wrap items-end gap-2">
+                      <input type="hidden" name="borrowerId" value={borrower.id} />
+                      <div className="min-w-44 flex-1">
+                        <label>KYC decision</label>
+                        <select name="kycStatus" defaultValue={borrower.kycStatus}>
+                          <option value="PENDING">Pending</option>
+                          <option value="VERIFIED">Verified</option>
+                          <option value="REJECTED">Rejected</option>
+                        </select>
+                      </div>
+                      <button className="rounded-md bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-700">Save KYC</button>
+                    </form>
+
+                    <div className="mt-4 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-900">
+                      <div className="text-xs font-semibold uppercase tracking-[0.06em] text-red-800">Client controls</div>
+                      <p className="mt-2 leading-6">
+                        Reset keeps this client profile but removes all linked loans and repayments so the account can start fresh. Delete removes the client and all related history entirely.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <form action={resetBorrowerAction}>
+                          <input type="hidden" name="borrowerId" value={borrower.id} />
+                          <ConfirmSubmitButton
+                            className="rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-50"
+                            message={`Reset ${borrower.fullName}? This will clear ${borrower.loans.length} loan record(s) and set KYC back to pending.`}
+                          >
+                            Reset client
+                          </ConfirmSubmitButton>
+                        </form>
+                        <form action={deleteBorrowerAction}>
+                          <input type="hidden" name="borrowerId" value={borrower.id} />
+                          <ConfirmSubmitButton
+                            className="rounded-md bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
+                            message={`Delete ${borrower.fullName}? This permanently removes the client and all linked history.`}
+                          >
+                            Delete client
+                          </ConfirmSubmitButton>
+                        </form>
+                      </div>
                     </div>
-                    <button className="rounded-md bg-brand-600 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-700">Save KYC</button>
-                  </form>
+                  </div>
                 ) : null}
               </article>
             ))}

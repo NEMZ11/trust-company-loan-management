@@ -35,8 +35,8 @@ Password: admin123
 Staff / Loan Officer:
 
 ```text
-Email: daniel@trustcompany.local
-Password: staff123
+Email: williams@trustcompany.local
+Password: williams123
 ```
 
 ## Local Setup

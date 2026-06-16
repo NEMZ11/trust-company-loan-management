@@ -47,6 +47,43 @@ async function notifyAdmin(args: { category: string; entityId: string; title: st
   });
 }
 
+async function collectBorrowerLinkedIds(borrowerId: string) {
+  const loans = await prisma.loan.findMany({
+    where: { borrowerId },
+    select: {
+      id: true,
+      repayments: {
+        select: { id: true }
+      }
+    }
+  });
+
+  return {
+    loanIds: loans.map((loan) => loan.id),
+    repaymentIds: loans.flatMap((loan) => loan.repayments.map((repayment) => repayment.id))
+  };
+}
+
+async function deleteBorrowerNotifications(args: { borrowerId: string; loanIds: string[]; repaymentIds: string[] }) {
+  const conditions: Array<{ category: string; entityId: string | { in: string[] } }> = [
+    { category: "BORROWERS", entityId: args.borrowerId }
+  ];
+
+  if (args.loanIds.length) {
+    conditions.push({ category: "LOANS", entityId: { in: args.loanIds } });
+  }
+
+  if (args.repaymentIds.length) {
+    conditions.push({ category: "REPAYMENTS", entityId: { in: args.repaymentIds } });
+  }
+
+  await prisma.notification.deleteMany({
+    where: {
+      OR: conditions
+    }
+  });
+}
+
 export async function createBorrowerAction(formData: FormData) {
   const user = await requireUser();
   const data = Object.fromEntries(formData);
@@ -224,6 +261,55 @@ export async function updateBorrowerKycAction(formData: FormData) {
   });
 
   revalidatePath("/borrowers");
+  revalidatePath("/dashboard");
+}
+
+export async function resetBorrowerAction(formData: FormData) {
+  await requireAdmin();
+  const borrowerId = String(formData.get("borrowerId"));
+  const { loanIds, repaymentIds } = await collectBorrowerLinkedIds(borrowerId);
+
+  await deleteBorrowerNotifications({ borrowerId, loanIds, repaymentIds });
+
+  if (loanIds.length) {
+    await prisma.loan.deleteMany({
+      where: { borrowerId }
+    });
+  }
+
+  await prisma.borrower.update({
+    where: { id: borrowerId },
+    data: { kycStatus: "PENDING" }
+  });
+
+  revalidatePath("/borrowers");
+  revalidatePath("/loans");
+  revalidatePath("/repayments");
+  revalidatePath("/reports");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteBorrowerAction(formData: FormData) {
+  await requireAdmin();
+  const borrowerId = String(formData.get("borrowerId"));
+  const { loanIds, repaymentIds } = await collectBorrowerLinkedIds(borrowerId);
+
+  await deleteBorrowerNotifications({ borrowerId, loanIds, repaymentIds });
+
+  if (loanIds.length) {
+    await prisma.loan.deleteMany({
+      where: { borrowerId }
+    });
+  }
+
+  await prisma.borrower.delete({
+    where: { id: borrowerId }
+  });
+
+  revalidatePath("/borrowers");
+  revalidatePath("/loans");
+  revalidatePath("/repayments");
+  revalidatePath("/reports");
   revalidatePath("/dashboard");
 }
 

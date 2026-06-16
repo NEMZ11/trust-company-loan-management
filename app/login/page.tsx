@@ -90,7 +90,7 @@ export default function LoginPage() {
                 <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Demo access</div>
                 <div className="mt-3 space-y-2">
                   <p>Admin: admin@trustcompany.local / admin123</p>
-                  <p>Staff: daniel@trustcompany.local / staff123</p>
+                  <p>Staff: williams@trustcompany.local / williams123</p>
                 </div>
               </div>
             ) : null}
