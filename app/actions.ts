@@ -14,6 +14,7 @@ const loginSchema = z.object({
 });
 
 const accountSettingsSchema = z.object({
+  name: z.string().trim().min(2).max(80),
   email: z.string().email(),
   phone: z.string().trim().max(50).optional()
 });
@@ -371,6 +372,7 @@ export async function markNotificationGroupReadAction(formData: FormData) {
 export async function updateCurrentUserAccountAction(formData: FormData) {
   const currentUser = await requireUser();
   const parsed = accountSettingsSchema.safeParse({
+    name: String(formData.get("name") || ""),
     email: String(formData.get("email") || ""),
     phone: String(formData.get("phone") || "")
   });
@@ -396,6 +398,7 @@ export async function updateCurrentUserAccountAction(formData: FormData) {
   await prisma.user.update({
     where: { id: currentUser.id },
     data: {
+      name: data.name,
       email: data.email,
       phone: data.phone || null
     }

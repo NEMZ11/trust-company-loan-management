@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 const statusCopy: Record<string, { tone: string; message: string }> = {
   "account-saved": {
     tone: "border-blue-100 bg-blue-50 text-blue-800",
-    message: "Account contact details updated."
+    message: "Account details updated."
   },
   "password-saved": {
     tone: "border-blue-100 bg-blue-50 text-blue-800",
@@ -26,7 +26,7 @@ const statusCopy: Record<string, { tone: string; message: string }> = {
   },
   "invalid-account": {
     tone: "border-red-100 bg-red-50 text-red-700",
-    message: "Enter a valid email and phone number."
+    message: "Enter a valid full name, email, and phone number."
   },
   "invalid-password": {
     tone: "border-red-100 bg-red-50 text-red-700",
@@ -90,15 +90,15 @@ export default async function SettingsPage({
               </div>
 
               <form action={updateCurrentUserAccountAction} className="grid gap-4">
+                <Field label="Full name">
+                  <input name="name" defaultValue={user.name} required />
+                </Field>
                 <Field label="Email">
                   <input name="email" type="email" defaultValue={user.email} required />
                 </Field>
                 <Field label="Phone">
                   <input name="phone" defaultValue={user.phone ?? ""} />
                 </Field>
-                <div className="text-sm text-slate-500">
-                  Your display name is currently locked here by design. Use this area for login/contact details only.
-                </div>
                 <Button>Save account details</Button>
               </form>
             </div>
