@@ -1,0 +1,263 @@
+"use server";
+
+import { addMonths } from "date-fns";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { clearSession, createSession, hashPassword, requireAdmin, requireUser, verifyPassword } from "@/lib/auth";
+import { balanceFor, totalDue as calculateTotalDue } from "@/lib/loan-math";
+import { prisma } from "@/lib/prisma";
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1)
+});
+
+export async function loginAction(_: unknown, formData: FormData) {
+  const parsed = loginSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Enter a valid email and password." };
+
+  const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  if (!user || !user.isActive) return { error: "Invalid login credentials." };
+
+  const valid = await verifyPassword(parsed.data.password, user.passwordHash);
+  if (!valid) return { error: "Invalid login credentials." };
+
+  await createSession(user.id);
+  redirect("/dashboard");
+}
+
+export async function logoutAction() {
+  await clearSession();
+  redirect("/login");
+}
+
+async function notifyAdmin(args: { category: string; entityId: string; title: string; message: string; user: { id: string; name: string; role: string } }) {
+  if (args.user.role !== "STAFF") return;
+
+  await prisma.notification.create({
+    data: {
+      category: args.category,
+      entityId: args.entityId,
+      title: args.title,
+      message: args.message,
+      createdById: args.user.id,
+      createdByName: args.user.name
+    }
+  });
+}
+
+export async function createBorrowerAction(formData: FormData) {
+  const user = await requireUser();
+  const data = Object.fromEntries(formData);
+  const borrower = await prisma.borrower.create({
+    data: {
+      fullName: String(data.fullName),
+      phone: String(data.phone),
+      nationalId: String(data.nationalId),
+      address: String(data.address),
+      occupation: String(data.occupation),
+      emergencyContact: String(data.emergencyContact),
+      notes: String(data.notes || ""),
+      kycStatus: "PENDING"
+    }
+  });
+
+  await notifyAdmin({
+    category: "BORROWERS",
+    entityId: borrower.id,
+    title: "New borrower submitted",
+    message: `${user.name} added borrower ${borrower.fullName}. KYC is pending admin review.`,
+    user
+  });
+
+  revalidatePath("/borrowers");
+  revalidatePath("/dashboard");
+}
+
+export async function createStaffAction(formData: FormData) {
+  await requireAdmin();
+  const data = Object.fromEntries(formData);
+  await prisma.user.create({
+    data: {
+      name: String(data.name),
+      email: String(data.email),
+      phone: String(data.phone || ""),
+      role: String(data.role),
+      branchId: String(data.branchId),
+      passwordHash: await hashPassword(String(data.password || "staff123"))
+    }
+  });
+  revalidatePath("/staff");
+}
+
+export async function createBranchAction(formData: FormData) {
+  await requireAdmin();
+  const data = Object.fromEntries(formData);
+  await prisma.branch.create({
+    data: {
+      name: String(data.name),
+      code: String(data.code).toUpperCase(),
+      address: String(data.address),
+      phone: String(data.phone || "")
+    }
+  });
+  revalidatePath("/branches");
+}
+
+export async function createLoanAction(formData: FormData) {
+  const user = await requireUser();
+  const data = Object.fromEntries(formData);
+  const startDate = new Date(String(data.startDate));
+  const durationMonths = Number(data.durationMonths);
+  const lastLoan = await prisma.loan.count();
+  const isAdmin = user.role === "ADMIN";
+  const status = isAdmin ? String(data.status || "PENDING") : "PENDING";
+  const assignedOfficerId = isAdmin ? String(data.assignedOfficerId) : user.id;
+  const branchId = isAdmin ? String(data.branchId) : String(user.branchId || data.branchId);
+
+  const loan = await prisma.loan.create({
+    data: {
+      loanNumber: `TC-LN-${String(lastLoan + 1).padStart(4, "0")}`,
+      borrowerId: String(data.borrowerId),
+      amount: Number(data.amount),
+      interestRate: Number(data.interestRate),
+      durationMonths,
+      startDate,
+      dueDate: addMonths(startDate, durationMonths),
+      status,
+      approvedAt: status === "PENDING" ? null : new Date(),
+      assignedOfficerId,
+      branchId,
+      notes: String(data.notes || ""),
+      latePenaltyAmount: Number(data.latePenaltyAmount || 0),
+      extraInterestRate: Number(data.extraInterestRate || 0),
+      guarantors: {
+        create: {
+          fullName: String(data.guarantorName),
+          phone: String(data.guarantorPhone),
+          relationship: String(data.guarantorRelationship),
+          address: String(data.guarantorAddress),
+          identification: String(data.guarantorIdentification)
+        }
+      }
+    }
+  });
+
+  const totalDue = calculateTotalDue(loan);
+  const monthly = totalDue / durationMonths;
+  for (let i = 1; i <= durationMonths; i++) {
+    await prisma.repaymentSchedule.create({
+      data: {
+        loanId: loan.id,
+        dueDate: addMonths(startDate, i),
+        amountDue: i === durationMonths ? totalDue - monthly * (durationMonths - 1) : monthly
+      }
+    });
+  }
+
+  await notifyAdmin({
+    category: "LOANS",
+    entityId: loan.id,
+    title: "New loan submitted",
+    message: `${user.name} submitted loan ${loan.loanNumber}. It is pending admin approval.`,
+    user
+  });
+
+  revalidatePath("/loans");
+  revalidatePath("/dashboard");
+}
+
+export async function recordRepaymentAction(formData: FormData) {
+  const user = await requireUser();
+  const data = Object.fromEntries(formData);
+  const loanId = String(data.loanId);
+
+  const repayment = await prisma.repayment.create({
+    data: {
+      loanId,
+      amountPaid: Number(data.amountPaid),
+      paymentDate: new Date(String(data.paymentDate)),
+      method: String(data.method),
+      reference: String(data.reference || ""),
+      notes: String(data.notes || ""),
+      recordedById: user.id
+    }
+  });
+
+  const loan = await prisma.loan.findUnique({
+    where: { id: loanId },
+    include: { repayments: true }
+  });
+  if (loan) {
+    if (balanceFor(loan) <= 0) {
+      await prisma.loan.update({ where: { id: loanId }, data: { status: "COMPLETED" } });
+      await prisma.repaymentSchedule.updateMany({ where: { loanId }, data: { status: "PAID" } });
+    }
+  }
+
+  await notifyAdmin({
+    category: "REPAYMENTS",
+    entityId: repayment.id,
+    title: "New repayment recorded",
+    message: `${user.name} recorded a repayment for review.`,
+    user
+  });
+
+  revalidatePath("/repayments");
+  revalidatePath("/loans");
+  revalidatePath("/dashboard");
+}
+
+export async function updateBorrowerKycAction(formData: FormData) {
+  await requireAdmin();
+  const borrowerId = String(formData.get("borrowerId"));
+  const kycStatus = String(formData.get("kycStatus"));
+
+  await prisma.borrower.update({
+    where: { id: borrowerId },
+    data: { kycStatus }
+  });
+  await prisma.notification.updateMany({
+    where: { category: "BORROWERS", entityId: borrowerId },
+    data: { read: true }
+  });
+
+  revalidatePath("/borrowers");
+  revalidatePath("/dashboard");
+}
+
+export async function updateLoanStatusAction(formData: FormData) {
+  await requireAdmin();
+  const loanId = String(formData.get("loanId"));
+  const status = String(formData.get("status"));
+
+  await prisma.loan.update({
+    where: { id: loanId },
+    data: {
+      status,
+      approvedAt: status === "PENDING" ? null : new Date()
+    }
+  });
+  await prisma.notification.updateMany({
+    where: { category: "LOANS", entityId: loanId },
+    data: { read: true }
+  });
+
+  revalidatePath("/loans");
+  revalidatePath("/dashboard");
+}
+
+export async function markNotificationGroupReadAction(formData: FormData) {
+  await requireAdmin();
+  const category = String(formData.get("category"));
+  await prisma.notification.updateMany({
+    where: { category },
+    data: { read: true }
+  });
+
+  revalidatePath("/borrowers");
+  revalidatePath("/loans");
+  revalidatePath("/repayments");
+  revalidatePath("/dashboard");
+}

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: trust-company-loan-management
+    env: node
+    plan: free
+    buildCommand: npm install && npm run db:push && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_SESSION_SECRET
+        generateValue: true

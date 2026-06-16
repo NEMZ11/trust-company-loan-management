@@ -1,0 +1,31 @@
+<svg width="1200" height="920" viewBox="0 0 1200 920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="920" fill="transparent"/>
+
+  <g>
+    <path d="M254 146c38-28 139-30 184 2v471H254V146Z" fill="#00163f"/>
+    <path d="M265 166c34-20 126-22 162 0v20c-49-28-119-25-162 0v-20ZM265 218c45-25 116-28 162 0v21c-48-26-117-26-162 0v-21ZM265 270c46-25 117-27 162 0v22c-48-27-117-27-162 0v-22ZM265 322c46-25 117-27 162 0v22c-48-27-117-27-162 0v-22ZM265 374c46-25 117-27 162 0v22c-48-27-117-27-162 0v-22ZM265 426c46-25 117-27 162 0v22c-48-27-117-27-162 0v-22ZM265 478c46-25 117-27 162 0v22c-48-27-117-27-162 0v-22ZM265 530c46-25 117-27 162 0v22c-48-27-117-27-162 0v-22ZM265 582c46-25 117-27 162 0v22c-48-27-117-27-162 0v-22Z" fill="#2563eb"/>
+    <path d="M265 188c48-26 116-26 162 0v22c-48-28-117-28-162 0v-22ZM265 240c48-26 116-26 162 0v22c-48-28-117-28-162 0v-22ZM265 292c48-26 116-26 162 0v22c-48-28-117-28-162 0v-22ZM265 344c48-26 116-26 162 0v22c-48-28-117-28-162 0v-22ZM265 396c48-26 116-26 162 0v22c-48-28-117-28-162 0v-22ZM265 448c48-26 116-26 162 0v22c-48-28-117-28-162 0v-22ZM265 500c48-26 116-26 162 0v22c-48-28-117-28-162 0v-22ZM265 552c48-26 116-26 162 0v22c-48-28-117-28-162 0v-22Z" fill="#ffffff"/>
+
+    <path d="M608 102 724 32v630H608V102Z" fill="#031131"/>
+    <path d="M748 50h44v624h-44V50ZM810 68h44v606h-44V68ZM872 88h44v586h-44V88Z" fill="#2563eb"/>
+    <path d="M936 270 1016 330v344h-80V270ZM520 326l64-50v394h-64V326Z" fill="#031131"/>
+    <path d="M636 126h78v46h-78v-46ZM636 234h78v46h-78v-46ZM636 342h78v46h-78v-46ZM636 450h78v46h-78v-46ZM636 558h78v46h-78v-46Z" fill="#ffffff"/>
+  </g>
+
+  <g>
+    <path d="M52 675 282 420l236-48 272 303H52Z" fill="#dc0000"/>
+    <path d="M52 675h244l228-244 227 244h43L529 388 282 420 52 675Z" fill="#b40000"/>
+    <path d="M294 675 526 426l232 249H294Z" fill="#ffffff"/>
+    <path d="M338 656 526 455l188 201H338Z" fill="#f8fafc"/>
+    <path d="M526 426 758 675h-34L526 463 329 675h-35L526 426Z" fill="#031131"/>
+    <path d="M492 566h36v36h-36v-36ZM540 566h36v36h-36v-36ZM492 614h36v36h-36v-36ZM540 614h36v36h-36v-36Z" fill="#031131"/>
+    <path d="M760 675 875 542l98 133H760Z" fill="#ffffff"/>
+    <path d="M760 675 874 524l145 151h-46l-98-103-88 103h-27Z" fill="#dc0000"/>
+    <path d="M811 656 875 590l63 66H811Z" fill="#f8fafc"/>
+    <path d="M849 621h22v22h-22v-22ZM881 621h22v22h-22v-22ZM849 651h22v22h-22v-22ZM881 651h22v22h-22v-22Z" fill="#031131"/>
+    <path d="M52 675h1094" stroke="#dc0000" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <text x="600" y="795" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="96" font-weight="900" letter-spacing="4" fill="#050505">TRUST COMPANY</text>
+  <text x="600" y="858" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-style="italic" fill="#050505">dedicated to making you financially able</text>
+</svg>

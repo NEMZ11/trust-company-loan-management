@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  address   String
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  loans     Loan[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("STAFF")
+  phone        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  branchId     String?
+  branch       Branch?  @relation(fields: [branchId], references: [id])
+  loans        Loan[]   @relation("AssignedOfficer")
+  repayments   Repayment[] @relation("RecordedBy")
+}
+
+model Borrower {
+  id               String    @id @default(cuid())
+  fullName         String
+  phone            String
+  nationalId       String    @unique
+  address          String
+  occupation       String
+  emergencyContact String
+  notes            String?
+  kycStatus        String    @default("PENDING")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  loans            Loan[]
+}
+
+model Guarantor {
+  id             String   @id @default(cuid())
+  fullName       String
+  phone          String
+  relationship   String
+  address        String
+  identification String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  loanId         String
+  loan           Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+}
+
+model Loan {
+  id                 String      @id @default(cuid())
+  loanNumber         String      @unique
+  amount             Decimal
+  interestRate       Decimal
+  durationMonths     Int
+  startDate          DateTime
+  dueDate            DateTime
+  notes              String?
+  status             String      @default("PENDING")
+  latePenaltyAmount  Decimal     @default(0)
+  extraInterestRate  Decimal     @default(0)
+  approvedAt         DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  borrowerId         String
+  borrower           Borrower    @relation(fields: [borrowerId], references: [id])
+  assignedOfficerId  String
+  assignedOfficer    User        @relation("AssignedOfficer", fields: [assignedOfficerId], references: [id])
+  branchId           String
+  branch             Branch      @relation(fields: [branchId], references: [id])
+  guarantors         Guarantor[]
+  schedules          RepaymentSchedule[]
+  repayments         Repayment[]
+}
+
+model RepaymentSchedule {
+  id        String         @id @default(cuid())
+  dueDate   DateTime
+  amountDue Decimal
+  status    String         @default("PENDING")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  loanId    String
+  loan      Loan           @relation(fields: [loanId], references: [id], onDelete: Cascade)
+}
+
+model Repayment {
+  id          String        @id @default(cuid())
+  amountPaid  Decimal
+  paymentDate DateTime
+  method      String
+  reference   String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+
+  loanId       String
+  loan         Loan          @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  recordedById String
+  recordedBy   User          @relation("RecordedBy", fields: [recordedById], references: [id])
+}
+
+model Notification {
+  id            String   @id @default(cuid())
+  category      String
+  entityId      String
+  title         String
+  message       String
+  createdById   String
+  createdByName String
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
