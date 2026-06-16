@@ -1,3 +1,4 @@
+import { cloneElement, isValidElement, useId } from "react";
 import { clsx } from "clsx";
 
 export function Card({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -27,10 +28,20 @@ export function Button({ children, className }: { children: React.ReactNode; cla
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const id = useId();
+  const control =
+    isValidElement(children) && typeof children.type !== "symbol"
+      ? cloneElement(children, {
+          ...(children.props ?? {}),
+          id: children.props?.id ?? id,
+          "aria-label": children.props?.["aria-label"] ?? label
+        })
+      : children;
+
   return (
     <div className="grid min-w-0 gap-1.5">
-      <label className="text-safe">{label}</label>
-      {children}
+      <label className="text-safe" htmlFor={id}>{label}</label>
+      {control}
     </div>
   );
 }

@@ -9,6 +9,8 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "postinstall": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "db:push": "prisma db push",
@@ -27,6 +29,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.9.0",
     "@types/react": "^18.3.12",
