@@ -6,6 +6,10 @@ A browser-based internal loan operations platform for a lending business. The sy
 
 This project models a real business workflow rather than a toy CRUD app. It shows how software can support lending operations, reduce manual tracking, and give staff a clearer view of borrowers, loans, repayments, overdue accounts, and branch performance.
 
+## Demo
+
+![Trust Company Loan Management demo](./public/demo/trust-company-loan-management-demo.gif)
+
 ## Screenshots
 
 ### Desktop Login
