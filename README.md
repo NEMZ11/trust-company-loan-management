@@ -1,43 +1,88 @@
 # Trust Company Loan Management System
 
-A browser-based internal loan operations platform for Trust Company. The system manages borrowers, guarantors, loans, repayments, overdue monitoring, branch structure, staff accounts, and reporting.
+A browser-based internal loan operations platform for a lending business. The system supports borrower onboarding, loan applications, guarantor management, repayment tracking, overdue monitoring, branch operations, staff accounts, and reporting.
+
+## Why This Project Matters
+
+This project models a real business workflow rather than a toy CRUD app. It shows how software can support lending operations, reduce manual tracking, and give staff a clearer view of borrowers, loans, repayments, overdue accounts, and branch performance.
+
+## Screenshots
+
+### Desktop Login
+
+![Desktop login](./public/screenshots/login-desktop.png)
+
+### Mobile Login
+
+![Mobile login](./public/screenshots/login-mobile.png)
+
+### Admin Reports
+
+![Admin reports](./public/screenshots/reports-admin.png)
+
+### Staff Settings
+
+![Staff settings](./public/screenshots/settings-staff.png)
 
 ## Tech Stack
 
-- Next.js App Router
-- React
-- Tailwind CSS
-- Node.js server actions
-- Prisma ORM
-- PostgreSQL database
+- **Frontend:** Next.js App Router, React, TypeScript, Tailwind CSS
+- **Backend:** Next.js server actions, Node.js
+- **Database:** PostgreSQL
+- **ORM:** Prisma
+- **Auth/Security:** Staff login, password hashing, role-based access
+- **Testing:** Playwright end-to-end tests
+- **Tools:** Git, GitHub, VS Code, npm
 
 ## Features
 
 - Secure staff login with administrator and staff roles
-- Dashboard metrics for borrowers, active loans, overdue loans, money loaned, repayments, and outstanding balances
 - Borrower profiles with KYC status, contact data, emergency contact, and notes
-- Loan creation with guarantor information, officer assignment, branch assignment, interest, duration, due date, penalties, and status
-- Repayment tracking with remaining balance calculation and automatic completion when fully paid
+- Loan creation with officer assignment, branch assignment, interest, duration, due date, penalties, guarantor details, and status
+- Repayment tracking with remaining balance calculation
+- Automatic completion when a loan is fully paid
 - Overdue/default monitoring with days overdue
-- Search and filters for borrowers, loan status, due dates, and assigned staff
+- Dashboard metrics for borrowers, active loans, overdue loans, money loaned, repayments, and outstanding balances
+- Search and filtering for borrowers, loan status, due dates, and assigned staff
 - Reports for loan status, monthly repayments, and staff performance
 - Branch and staff administration
 
-## Demo Credentials
+## Architecture
 
-Administrator:
+```mermaid
+flowchart TD
+    User["Staff / Admin User"] --> UI["Next.js + React UI"]
+    UI --> Actions["Server Actions / API Logic"]
+    Actions --> Auth["Authentication and Role Checks"]
+    Actions --> Validation["Input Validation"]
+    Actions --> Services["Loan and Repayment Workflows"]
+    Services --> Prisma["Prisma ORM"]
+    Prisma --> DB[("PostgreSQL Database")]
 
-```text
-Email: admin@trustcompany.local
-Password: admin123
+    DB --> Users["Users and Roles"]
+    DB --> Branches["Branches"]
+    DB --> Borrowers["Borrowers"]
+    DB --> Loans["Loans"]
+    DB --> Guarantors["Guarantors"]
+    DB --> Repayments["Repayment Schedules and Payments"]
+
+    Services --> Reports["Reports and Dashboard Metrics"]
+    Reports --> UI
 ```
 
-Staff / Loan Officer:
+## Data Model
 
-```text
-Email: williams@trustcompany.local
-Password: williams123
-```
+Main Prisma models:
+
+- `User`
+- `Branch`
+- `Borrower`
+- `Loan`
+- `Guarantor`
+- `RepaymentSchedule`
+- `Repayment`
+- `Notification`
+- `AuditLog`
 
 ## Local Setup
 
@@ -53,7 +98,7 @@ npm install
 npx prisma generate
 ```
 
-3. Add your PostgreSQL database URL to `.env`:
+3. Create `.env` from `.env.example`:
 
 ```bash
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require"
@@ -78,49 +123,41 @@ npm run db:seed
 npm run dev
 ```
 
-7. Open the app:
+7. Open:
 
 ```text
 http://localhost:3000
 ```
 
-## Useful Commands
+## Quality Checks
 
 ```bash
+npm run lint
+npm run typecheck
 npm run build
-npm run db:generate
-npm run db:push
-npm run db:seed
-npx prisma studio
+npm run test:e2e
 ```
 
-## Public Deployment
+## What I Built
 
-Localhost is only for previewing the system on this computer. To let other people access Trust Company online, deploy the app to a Next.js hosting provider and connect it to a hosted PostgreSQL database.
+- Designed the application structure and lending workflow.
+- Implemented borrower, loan, guarantor, repayment, branch, staff, notification, and audit-log data models.
+- Built staff-facing screens for loan operations and reporting.
+- Added role-aware access patterns for administrator and staff users.
+- Prepared deployment and backup/restore documentation for production readiness.
 
-Production launch requires:
+## Production Notes
 
-- `DATABASE_URL`
-- `APP_SESSION_SECRET`
-- HTTPS
-- Demo passwords changed before giving access to real staff
+Seeded local accounts are intended for development only. Keep passwords out of public documentation, rotate all seeded credentials before production use, enforce HTTPS, and set a strong `APP_SESSION_SECRET`.
 
-See `DEPLOYMENT.md` for the launch checklist.
+## Future .NET Version
 
-## Database
+Because some junior developer roles require .NET, a smaller ASP.NET Core Web API version would be a strong follow-up project:
 
-The Prisma schema is in `prisma/schema.prisma`. The app uses PostgreSQL through Prisma. Run `npm run db:push` to create/update the database tables, then run `npm run db:seed` only when you intentionally want demo data.
-
-Main models:
-
-- `User`
-- `Branch`
-- `Borrower`
-- `Loan`
-- `Guarantor`
-- `RepaymentSchedule`
-- `Repayment`
-
-## Notes
-
-For production deployment, set a strong `APP_SESSION_SECRET`, enforce HTTPS, and change all seeded/demo passwords.
+- ASP.NET Core Web API
+- Entity Framework Core
+- SQL Server
+- JWT authentication
+- CRUD endpoints for borrowers, loans, guarantors, and repayments
+- xUnit unit tests
+- Swagger/OpenAPI documentation
